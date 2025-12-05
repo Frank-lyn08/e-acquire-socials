@@ -1197,5 +1197,4 @@ window.showSupportModal = showSupportModal;
 window.copyReferralCode = copyReferralCode;
 window.copyReferralLink = copyReferralLink;
 window.shareWhatsApp = shareWhatsApp;
-
 window.shareTelegram = shareTelegram;
