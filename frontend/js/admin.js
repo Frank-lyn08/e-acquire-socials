@@ -7,6 +7,9 @@ let allTransactions = [];
 let allTickets = [];
 let allServices = [];
 
+// Backend API Configuration
+const API_BASE_URL = 'https://e-acquire-socials.onrender.com'; // Your deployed backend
+
 // Initialize admin panel
 document.addEventListener('DOMContentLoaded', function() {
     initializeAdminPanel();
@@ -50,6 +53,151 @@ async function initializeAdminPanel() {
     }
 }
 
+// API Request Helper Function
+async function makeAPIRequest(endpoint, method = 'GET', data = null, requiresAuth = false) {
+    const url = `${API_BASE_URL}${endpoint}`;
+    
+    const headers = {
+        'Content-Type': 'application/json',
+    };
+    
+    if (requiresAuth) {
+        const token = localStorage.getItem('token');
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+    }
+    
+    const options = {
+        method: method,
+        headers: headers,
+    };
+    
+    if (data && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {
+        options.body = JSON.stringify(data);
+    }
+    
+    try {
+        const response = await fetch(url, options);
+        const result = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(result.message || `API request failed with status ${response.status}`);
+        }
+        
+        return result;
+    } catch (error) {
+        console.error(`API Request Error (${method} ${endpoint}):`, error);
+        throw error;
+    }
+}
+
+// Utility functions that might be missing from your code
+function getUserData() {
+    try {
+        const token = localStorage.getItem('token');
+        if (!token) return null;
+        
+        // Decode JWT token to get user data
+        const base64Url = token.split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join(''));
+        
+        const decoded = JSON.parse(jsonPayload);
+        const userStr = localStorage.getItem('user');
+        if (userStr) {
+            const user = JSON.parse(userStr);
+            return { ...user, ...decoded };
+        }
+        return decoded;
+    } catch (error) {
+        console.error('Error getting user data:', error);
+        return null;
+    }
+}
+
+function requireAdmin() {
+    const token = localStorage.getItem('token');
+    if (!token) {
+        window.location.href = 'login.html';
+        return false;
+    }
+    
+    const userData = getUserData();
+    if (!userData || userData.role !== 'admin') {
+        showNotification('Admin access required', 'error');
+        setTimeout(() => {
+            window.location.href = 'dashboard.html';
+        }, 2000);
+        return false;
+    }
+    
+    return true;
+}
+
+function showNotification(message, type = 'info') {
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    notification.innerHTML = `
+        <span>${message}</span>
+        <button onclick="this.parentElement.remove()">&times;</button>
+    `;
+    
+    // Add to DOM
+    const container = document.getElementById('notification-container') || createNotificationContainer();
+    container.appendChild(notification);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        if (notification.parentElement) {
+            notification.remove();
+        }
+    }, 5000);
+}
+
+function createNotificationContainer() {
+    const container = document.createElement('div');
+    container.id = 'notification-container';
+    container.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 10000;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        max-width: 300px;
+    `;
+    document.body.appendChild(container);
+    return container;
+}
+
+function formatCurrency(amount) {
+    return new Intl.NumberFormat('en-NG', {
+        style: 'currency',
+        currency: 'NGN'
+    }).format(amount);
+}
+
+function showModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.style.display = 'block';
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+function hideModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.style.display = 'none';
+        document.body.style.overflow = 'auto';
+    }
+}
+
 function setupAdminEventListeners() {
     // Settings forms
     const generalSettings = document.getElementById('general-settings');
@@ -66,6 +214,14 @@ function setupAdminEventListeners() {
     if (depositSettings) {
         depositSettings.addEventListener('submit', handleDepositSettings);
     }
+    
+    // Close modals when clicking outside
+    document.addEventListener('click', function(event) {
+        if (event.target.classList.contains('modal')) {
+            event.target.style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
+    });
 }
 
 function updateAdminInfo() {
@@ -80,7 +236,7 @@ function updateAdminInfo() {
 
 async function loadAdminStats() {
     try {
-        const response = await makeAPIRequest('/admin/stats', 'GET', null, true);
+        const response = await makeAPIRequest('/api/admin/stats', 'GET', null, true);
         
         if (response.success) {
             const stats = response.stats;
@@ -90,8 +246,8 @@ async function loadAdminStats() {
             document.getElementById('total-orders').textContent = stats.totalOrders || 0;
             document.getElementById('total-deposits').textContent = formatCurrency(stats.totalDeposits || 0);
             document.getElementById('total-revenue').textContent = `${stats.totalRevenue || 0} Equities`;
-            document.getElementById('pending-deposits').textContent = '...'; // Will be updated separately
-            document.getElementById('open-tickets').textContent = '...'; // Will be updated separately
+            document.getElementById('pending-deposits').textContent = stats.pendingDeposits || 0;
+            document.getElementById('open-tickets').textContent = stats.openTickets || 0;
             
             // Update recent users
             const recentUsersTbody = document.getElementById('recent-users');
@@ -116,10 +272,10 @@ async function loadAdminStats() {
             if (recentOrdersTbody && stats.recentOrders) {
                 recentOrdersTbody.innerHTML = stats.recentOrders.map(order => `
                     <tr>
-                        <td><code>${order.orderId.substring(0, 10)}...</code></td>
+                        <td><code>${order.orderId?.substring(0, 10) || ''}...</code></td>
                         <td>${order.userId?.username || 'N/A'}</td>
                         <td>${order.serviceName}</td>
-                        <td>${order.cost} Equities</td>
+                        <td>${order.cost || 0} Equities</td>
                         <td><span class="status-badge status-${order.status}">${order.status}</span></td>
                     </tr>
                 `).join('');
@@ -140,7 +296,7 @@ async function loadAdminStats() {
 
 async function loadPendingDeposits() {
     try {
-        const response = await makeAPIRequest('/admin/deposits/pending', 'GET', null, true);
+        const response = await makeAPIRequest('/api/admin/deposits/pending', 'GET', null, true);
         
         if (response.success) {
             const deposits = response.deposits;
@@ -166,7 +322,7 @@ async function loadPendingDeposits() {
                 tbody.innerHTML = deposits.map(deposit => `
                     <tr>
                         <td><code>${deposit.transactionId}</code></td>
-                        <td>${deposit.username} (${deposit.email})</td>
+                        <td>${deposit.username || 'N/A'} (${deposit.email || 'N/A'})</td>
                         <td>${formatCurrency(deposit.amount)}</td>
                         <td>${deposit.equities} Equities</td>
                         <td><code>${deposit.reference}</code></td>
@@ -203,9 +359,7 @@ async function loadPendingDeposits() {
 
 async function loadAllUsers(page = 1, limit = 20) {
     try {
-        // Note: We need to create this endpoint in backend
-        // For now, we'll use the stats endpoint or implement a users endpoint
-        const response = await makeAPIRequest(`/admin/users?page=${page}&limit=${limit}`, 'GET', null, true);
+        const response = await makeAPIRequest(`/api/admin/users?page=${page}&limit=${limit}`, 'GET', null, true);
         
         if (response.success) {
             allUsers = response.users || [];
@@ -219,7 +373,7 @@ async function loadAllUsers(page = 1, limit = 20) {
                 
                 tbody.innerHTML = allUsers.map(user => `
                     <tr>
-                        <td><code>${user._id.substring(0, 8)}...</code></td>
+                        <td><code>${user._id?.substring(0, 8) || ''}...</code></td>
                         <td>${user.username}</td>
                         <td>${user.email}</td>
                         <td>${user.phone || 'N/A'}</td>
@@ -255,10 +409,9 @@ async function loadAllUsers(page = 1, limit = 20) {
         }
     } catch (error) {
         console.error('Error loading all users:', error);
-        // Fallback: Use recent users for now
         const tbody = document.getElementById('users-table');
         if (tbody) {
-            tbody.innerHTML = '<tr><td colspan="9" class="text-center">User management endpoint not implemented yet.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="9" class="text-center">Error loading users. Please try again.</td></tr>';
         }
     }
 }
@@ -266,7 +419,7 @@ async function loadAllUsers(page = 1, limit = 20) {
 async function loadAllOrders(page = 1, limit = 20) {
     try {
         const filter = document.getElementById('admin-order-filter')?.value || 'all';
-        const response = await makeAPIRequest(`/admin/orders?page=${page}&limit=${limit}&status=${filter}`, 'GET', null, true);
+        const response = await makeAPIRequest(`/api/admin/orders?page=${page}&limit=${limit}&status=${filter}`, 'GET', null, true);
         
         if (response.success) {
             allOrders = response.orders || [];
@@ -319,7 +472,7 @@ async function loadAllOrders(page = 1, limit = 20) {
 async function loadAllTransactions(page = 1, limit = 20) {
     try {
         const filter = document.getElementById('admin-transaction-filter')?.value || 'all';
-        const response = await makeAPIRequest(`/admin/transactions?page=${page}&limit=${limit}&type=${filter}`, 'GET', null, true);
+        const response = await makeAPIRequest(`/api/admin/transactions?page=${page}&limit=${limit}&type=${filter}`, 'GET', null, true);
         
         if (response.success) {
             allTransactions = response.transactions || [];
@@ -357,7 +510,7 @@ async function loadAllTransactions(page = 1, limit = 20) {
 
 async function loadAllServices() {
     try {
-        const response = await makeAPIRequest('/services', 'GET');
+        const response = await makeAPIRequest('/api/services', 'GET');
         
         if (response.success) {
             allServices = [];
@@ -414,7 +567,7 @@ async function loadAllServices() {
 async function loadSupportTickets(page = 1, limit = 20) {
     try {
         const filter = document.getElementById('ticket-filter')?.value || 'all';
-        const response = await makeAPIRequest(`/admin/tickets?page=${page}&limit=${limit}&status=${filter}`, 'GET', null, true);
+        const response = await makeAPIRequest(`/api/admin/tickets?page=${page}&limit=${limit}&status=${filter}`, 'GET', null, true);
         
         if (response.success) {
             allTickets = response.tickets || [];
@@ -498,6 +651,19 @@ function setupAdminSectionSwitching() {
                 
                 // Update URL hash
                 window.location.hash = sectionId;
+                
+                // Refresh data for some sections
+                if (sectionId === 'deposits') {
+                    loadPendingDeposits();
+                } else if (sectionId === 'users') {
+                    loadAllUsers();
+                } else if (sectionId === 'orders') {
+                    loadAllOrders();
+                } else if (sectionId === 'transactions') {
+                    loadAllTransactions();
+                } else if (sectionId === 'tickets') {
+                    loadSupportTickets();
+                }
             });
         }
     });
@@ -517,7 +683,7 @@ async function approveDeposit(transactionId) {
     if (!confirm('Are you sure you want to approve this deposit?')) return;
     
     try {
-        const response = await makeAPIRequest('/admin/deposit/approve', 'POST', {
+        const response = await makeAPIRequest('/api/admin/deposit/approve', 'POST', {
             transactionId,
             action: 'approve'
         }, true);
@@ -537,7 +703,7 @@ async function rejectDeposit(transactionId) {
     if (reason === null) return;
     
     try {
-        const response = await makeAPIRequest('/admin/deposit/approve', 'POST', {
+        const response = await makeAPIRequest('/api/admin/deposit/approve', 'POST', {
             transactionId,
             action: 'reject',
             reason: reason || 'Rejected by admin'
@@ -666,7 +832,7 @@ function downloadImage(url, filename) {
 // User Management
 async function viewUserDetails(userId) {
     try {
-        const response = await makeAPIRequest(`/admin/user/${userId}`, 'GET', null, true);
+        const response = await makeAPIRequest(`/api/admin/users/${userId}`, 'GET', null, true);
         
         if (response.success) {
             const user = response.user;
@@ -779,7 +945,7 @@ async function toggleUserStatus(userId, isCurrentlyActive) {
     if (!confirm(`Are you sure you want to ${action} this user?`)) return;
     
     try {
-        const response = await makeAPIRequest(`/admin/user/${userId}/status`, 'POST', {
+        const response = await makeAPIRequest(`/api/admin/users/${userId}/status`, 'PUT', {
             action: action
         }, true);
         
@@ -796,7 +962,6 @@ async function toggleUserStatus(userId, isCurrentlyActive) {
 }
 
 async function editUser(userId) {
-    // Implementation for editing user
     showNotification('Edit user feature coming soon', 'info');
 }
 
@@ -810,13 +975,15 @@ async function resetUserPassword(userId) {
     if (!confirm('Are you sure you want to reset this user\'s password?')) return;
     
     try {
-        const response = await makeAPIRequest(`/admin/user/${userId}/reset-password`, 'POST', {
-            newPassword
-        }, true);
-        
-        if (response.success) {
-            showNotification('Password reset successfully', 'success');
-        }
+        showNotification('This endpoint is not implemented in backend yet', 'info');
+        // Note: You need to implement this endpoint in your backend
+        // const response = await makeAPIRequest(`/api/admin/users/${userId}/reset-password`, 'POST', {
+        //     newPassword
+        // }, true);
+        // 
+        // if (response.success) {
+        //     showNotification('Password reset successfully', 'success');
+        // }
     } catch (error) {
         showNotification(error.message || 'Failed to reset password', 'error');
     }
@@ -825,7 +992,8 @@ async function resetUserPassword(userId) {
 // Order Management (Admin)
 async function viewOrderDetailsAdmin(orderId) {
     try {
-        const response = await makeAPIRequest(`/admin/order/${orderId}`, 'GET', null, true);
+        // For admin order details, you can use the regular order endpoint or create an admin endpoint
+        const response = await makeAPIRequest(`/api/orders/${orderId}`, 'GET', null, true);
         
         if (response.success) {
             const order = response.order;
@@ -893,18 +1061,6 @@ async function viewOrderDetailsAdmin(orderId) {
                         </div>
                         ` : ''}
                     </div>
-                    
-                    <div class="detail-section">
-                        <h5>User Information</h5>
-                        <div class="detail-row">
-                            <span>User:</span>
-                            <span>${order.userId?.username || 'Unknown'} (${order.userId?.email || 'N/A'})</span>
-                        </div>
-                        <div class="detail-row">
-                            <span>User ID:</span>
-                            <span><code>${order.userId?._id || 'N/A'}</code></span>
-                        </div>
-                    </div>
                 </div>
                 
                 ${order.apiResponse ? `
@@ -940,7 +1096,7 @@ async function cancelOrderAdmin(orderId) {
     if (!confirm('Are you sure you want to cancel this order? This will refund the user.')) return;
     
     try {
-        const response = await makeAPIRequest(`/admin/order/${orderId}/cancel`, 'POST', null, true);
+        const response = await makeAPIRequest(`/api/orders/${orderId}/cancel`, 'POST', null, true);
         
         if (response.success) {
             showNotification('Order cancelled successfully', 'success');
@@ -957,11 +1113,13 @@ async function refillOrder(orderId) {
     if (!confirm('Create refill for this order?')) return;
     
     try {
-        const response = await makeAPIRequest(`/admin/order/${orderId}/refill`, 'POST', null, true);
-        
-        if (response.success) {
-            showNotification('Refill created successfully', 'success');
-        }
+        showNotification('Refill endpoint not implemented in backend yet', 'info');
+        // Note: You need to implement this endpoint in your backend
+        // const response = await makeAPIRequest(`/api/orders/${orderId}/refill`, 'POST', null, true);
+        // 
+        // if (response.success) {
+        //     showNotification('Refill created successfully', 'success');
+        // }
     } catch (error) {
         showNotification(error.message || 'Failed to create refill', 'error');
     }
@@ -970,118 +1128,14 @@ async function refillOrder(orderId) {
 // Ticket Management
 async function viewTicketAdmin(ticketId) {
     try {
-        const response = await makeAPIRequest(`/admin/ticket/${ticketId}`, 'GET', null, true);
-        
-        if (response.success) {
-            const ticket = response.ticket;
-            const content = `
-                <h4>Ticket: ${ticket.ticketId}</h4>
-                <div class="ticket-details-grid">
-                    <div class="detail-section">
-                        <h5>Ticket Information</h5>
-                        <div class="detail-row">
-                            <span>Subject:</span>
-                            <span>${ticket.subject}</span>
-                        </div>
-                        <div class="detail-row">
-                            <span>Category:</span>
-                            <span>${ticket.category}</span>
-                        </div>
-                        <div class="detail-row">
-                            <span>Priority:</span>
-                            <span class="priority-badge priority-${ticket.priority}">${ticket.priority}</span>
-                        </div>
-                        <div class="detail-row">
-                            <span>Status:</span>
-                            <span class="status-badge status-${ticket.status}">${ticket.status}</span>
-                        </div>
-                        <div class="detail-row">
-                            <span>Assigned To:</span>
-                            <span>${ticket.assignedTo || 'Unassigned'}</span>
-                        </div>
-                        <div class="detail-row">
-                            <span>Created:</span>
-                            <span>${new Date(ticket.createdAt).toLocaleString()}</span>
-                        </div>
-                        <div class="detail-row">
-                            <span>Updated:</span>
-                            <span>${new Date(ticket.updatedAt).toLocaleString()}</span>
-                        </div>
-                    </div>
-                    
-                    <div class="detail-section">
-                        <h5>User Information</h5>
-                        <div class="detail-row">
-                            <span>User:</span>
-                            <span>${ticket.userId?.username || 'Unknown'} (${ticket.userId?.email || 'N/A'})</span>
-                        </div>
-                        <div class="detail-row">
-                            <span>User ID:</span>
-                            <span><code>${ticket.userId?._id || 'N/A'}</code></span>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="ticket-message-section">
-                    <h5>Initial Message</h5>
-                    <div class="message-box">
-                        ${ticket.message}
-                    </div>
-                </div>
-                
-                ${ticket.replies?.length > 0 ? `
-                <div class="ticket-replies-section">
-                    <h5>Conversation</h5>
-                    <div class="replies-container">
-                        ${ticket.replies.map(reply => `
-                            <div class="reply ${reply.isStaff ? 'staff-reply' : 'user-reply'}">
-                                <div class="reply-header">
-                                    <span class="reply-author">${reply.isStaff ? 'Staff' : ticket.userId?.username || 'User'}</span>
-                                    <span class="reply-time">${new Date(reply.createdAt).toLocaleString()}</span>
-                                </div>
-                                <div class="reply-content">
-                                    ${reply.message}
-                                </div>
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-                ` : ''}
-                
-                <div class="ticket-reply-section" style="margin-top: 20px;">
-                    <h5>Reply as Admin</h5>
-                    <form id="admin-reply-form">
-                        <div class="form-group">
-                            <textarea id="admin-reply-message" class="form-control" rows="4" placeholder="Enter your reply..." required></textarea>
-                        </div>
-                        <div class="form-group">
-                            <select id="ticket-status-update" class="form-control">
-                                <option value="">Keep current status</option>
-                                <option value="in progress">Mark as In Progress</option>
-                                <option value="awaiting reply">Mark as Awaiting Reply</option>
-                                <option value="resolved">Mark as Resolved</option>
-                                <option value="closed">Mark as Closed</option>
-                            </select>
-                        </div>
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-paper-plane"></i> Send Reply
-                        </button>
-                    </form>
-                </div>
-            `;
-            
-            document.getElementById('ticket-details-content').innerHTML = content;
-            showModal('ticket-details-modal');
-            
-            // Handle reply form
-            const replyForm = document.getElementById('admin-reply-form');
-            if (replyForm) {
-                replyForm.onsubmit = function(e) {
-                    e.preventDefault();
-                    sendAdminReply(ticketId);
-                };
-            }
-        }
+        // Note: This endpoint might not exist in your backend yet
+        showNotification('Ticket details endpoint not implemented', 'info');
+        // const response = await makeAPIRequest(`/api/support/ticket/${ticketId}`, 'GET', null, true);
+        // 
+        // if (response.success) {
+        //     const ticket = response.ticket;
+        //     // ... rest of the code
+        // }
     } catch (error) {
         showNotification('Failed to load ticket details', 'error');
     }
@@ -1102,13 +1156,15 @@ async function sendAdminReply(ticketId) {
             data.status = status;
         }
         
-        const response = await makeAPIRequest(`/admin/ticket/${ticketId}/reply`, 'POST', data, true);
-        
-        if (response.success) {
-            showNotification('Reply sent successfully', 'success');
-            hideModal('ticket-details-modal');
-            loadSupportTickets();
-        }
+        showNotification('Ticket reply endpoint not implemented in backend yet', 'info');
+        // Note: You need to implement this endpoint in your backend
+        // const response = await makeAPIRequest(`/api/admin/ticket/${ticketId}/reply`, 'POST', data, true);
+        // 
+        // if (response.success) {
+        //     showNotification('Reply sent successfully', 'success');
+        //     hideModal('ticket-details-modal');
+        //     loadSupportTickets();
+        // }
     } catch (error) {
         showNotification(error.message || 'Failed to send reply', 'error');
     }
@@ -1119,14 +1175,16 @@ async function assignTicket(ticketId) {
     if (!staff) return;
     
     try {
-        const response = await makeAPIRequest(`/admin/ticket/${ticketId}/assign`, 'POST', {
-            staff
-        }, true);
-        
-        if (response.success) {
-            showNotification(`Ticket assigned to ${staff}`, 'success');
-            loadSupportTickets();
-        }
+        showNotification('Ticket assignment endpoint not implemented in backend yet', 'info');
+        // Note: You need to implement this endpoint in your backend
+        // const response = await makeAPIRequest(`/api/admin/ticket/${ticketId}/assign`, 'POST', {
+        //     staff
+        // }, true);
+        // 
+        // if (response.success) {
+        //     showNotification(`Ticket assigned to ${staff}`, 'success');
+        //     loadSupportTickets();
+        // }
     } catch (error) {
         showNotification(error.message || 'Failed to assign ticket', 'error');
     }
@@ -1137,7 +1195,7 @@ async function syncServices() {
     if (!confirm('Sync services from Thekclaut? This may take a moment.')) return;
     
     try {
-        const response = await makeAPIRequest('/admin/services/sync', 'POST', null, true);
+        const response = await makeAPIRequest('/api/admin/services/sync', 'POST', null, true);
         
         if (response.success) {
             showNotification('Services synced successfully', 'success');
@@ -1154,14 +1212,16 @@ async function toggleServiceStatus(serviceId, isCurrentlyActive) {
     if (!confirm(`Are you sure you want to ${action} this service?`)) return;
     
     try {
-        const response = await makeAPIRequest(`/admin/service/${serviceId}/status`, 'POST', {
-            action: action
-        }, true);
-        
-        if (response.success) {
-            showNotification(`Service ${action}d successfully`, 'success');
-            loadAllServices();
-        }
+        showNotification('Service status toggle endpoint not implemented in backend yet', 'info');
+        // Note: You need to implement this endpoint in your backend
+        // const response = await makeAPIRequest(`/api/admin/service/${serviceId}/status`, 'POST', {
+        //     action: action
+        // }, true);
+        // 
+        // if (response.success) {
+        //     showNotification(`Service ${action}d successfully`, 'success');
+        //     loadAllServices();
+        // }
     } catch (error) {
         showNotification(error.message || `Failed to ${action} service`, 'error');
     }
@@ -1201,46 +1261,6 @@ async function checkSystemHealth() {
                 apiStatusElement.className = 'status-indicator online';
             }
             
-            // Show modal with detailed info
-            if (document.getElementById('system-health-modal').style.display === 'block') {
-                const healthContent = `
-                    <div class="health-check">
-                        <h4>System Health Status</h4>
-                        <div class="health-item">
-                            <span>Backend:</span>
-                            <span class="status ${response.success ? 'healthy' : 'unhealthy'}">
-                                ${response.success ? 'Healthy' : 'Unhealthy'}
-                            </span>
-                        </div>
-                        <div class="health-item">
-                            <span>Database:</span>
-                            <span class="status ${response.database.connected ? 'healthy' : 'unhealthy'}">
-                                ${response.database.connected ? 'Connected' : 'Disconnected'}
-                            </span>
-                        </div>
-                        <div class="health-item">
-                            <span>Thekclaut API:</span>
-                            <span class="status ${response.thekclautAPI.status === 'connected' ? 'healthy' : 'unhealthy'}">
-                                ${response.thekclautAPI.status === 'connected' ? 'Connected' : 'Disconnected'}
-                            </span>
-                        </div>
-                        <div class="health-item">
-                            <span>Environment:</span>
-                            <span>${response.environment || 'development'}</span>
-                        </div>
-                        <div class="health-item">
-                            <span>Timestamp:</span>
-                            <span>${new Date(response.timestamp).toLocaleString()}</span>
-                        </div>
-                        <div class="health-item">
-                            <span>Thekclaut Balance:</span>
-                            <span>₦${response.thekclautAPI.balance || '0'}</span>
-                        </div>
-                    </div>
-                `;
-                document.getElementById('system-health-content').innerHTML = healthContent;
-            }
-            
             return true;
         }
     } catch (error) {
@@ -1261,7 +1281,10 @@ async function checkSystemHealth() {
 function startSystemClock() {
     function updateClock() {
         const now = new Date();
-        document.getElementById('server-time').textContent = now.toLocaleTimeString();
+        const timeElement = document.getElementById('server-time');
+        if (timeElement) {
+            timeElement.textContent = now.toLocaleTimeString();
+        }
         
         // Calculate uptime (simplified - would need backend support for actual uptime)
         if (!window.serverStartTime) {
@@ -1271,7 +1294,10 @@ function startSystemClock() {
         const hours = Math.floor(uptime / 3600);
         const minutes = Math.floor((uptime % 3600) / 60);
         const seconds = uptime % 60;
-        document.getElementById('uptime').textContent = `${hours}h ${minutes}m ${seconds}s`;
+        const uptimeElement = document.getElementById('uptime');
+        if (uptimeElement) {
+            uptimeElement.textContent = `${hours}h ${minutes}m ${seconds}s`;
+        }
     }
     
     updateClock();
@@ -1281,7 +1307,10 @@ function startSystemClock() {
 function updateSystemInfo() {
     // Update system information
     const now = new Date();
-    document.getElementById('server-time').textContent = now.toLocaleTimeString();
+    const timeElement = document.getElementById('server-time');
+    if (timeElement) {
+        timeElement.textContent = now.toLocaleTimeString();
+    }
 }
 
 function updatePagination(elementId, currentPage, limit, totalItems, loadFunction) {
@@ -1323,7 +1352,7 @@ function searchUsers() {
         if (tbody && allUsers.length > 0) {
             tbody.innerHTML = allUsers.map(user => `
                 <tr>
-                    <td><code>${user._id.substring(0, 8)}...</code></td>
+                    <td><code>${user._id?.substring(0, 8) || ''}...</code></td>
                     <td>${user.username}</td>
                     <td>${user.email}</td>
                     <td>${user.phone || 'N/A'}</td>
@@ -1372,7 +1401,7 @@ function searchUsers() {
         
         tbody.innerHTML = filteredUsers.map(user => `
             <tr>
-                <td><code>${user._id.substring(0, 8)}...</code></td>
+                <td><code>${user._id?.substring(0, 8) || ''}...</code></td>
                 <td>${user.username}</td>
                 <td>${user.email}</td>
                 <td>${user.phone || 'N/A'}</td>
@@ -1584,7 +1613,12 @@ async function handleDepositSettings(e) {
 
 function clearCache() {
     if (confirm('Clear all cache? This will not affect the database.')) {
+        localStorage.clear();
+        sessionStorage.clear();
         showNotification('Cache cleared successfully', 'success');
+        setTimeout(() => {
+            window.location.reload();
+        }, 1000);
     }
 }
 
@@ -1612,7 +1646,7 @@ const adminStyles = `
     .badge {
         display: inline-block;
         padding: 2px 6px;
-        background-color: var(--danger-color);
+        background-color: #dc3545;
         color: white;
         border-radius: 10px;
         font-size: 0.75rem;
@@ -1630,12 +1664,12 @@ const adminStyles = `
     }
     
     .status-indicator.online {
-        background-color: var(--success-color);
+        background-color: #28a745;
         color: white;
     }
     
     .status-indicator.offline {
-        background-color: var(--danger-color);
+        background-color: #dc3545;
         color: white;
     }
     
@@ -1740,14 +1774,14 @@ const adminStyles = `
     .detail-section {
         background: #f8fafc;
         padding: 15px;
-        border-radius: var(--border-radius);
+        border-radius: 8px;
         border: 1px solid #e5e7eb;
     }
     
     .detail-section h5 {
         margin-top: 0;
         margin-bottom: 10px;
-        color: var(--dark-color);
+        color: #333;
         font-size: 1rem;
     }
     
@@ -1764,7 +1798,7 @@ const adminStyles = `
     
     .detail-row span:first-child {
         font-weight: 600;
-        color: var(--gray-color);
+        color: #666;
     }
     
     .detail-row span:last-child {
@@ -1776,7 +1810,7 @@ const adminStyles = `
     .message-box {
         background: #f8fafc;
         padding: 15px;
-        border-radius: var(--border-radius);
+        border-radius: 8px;
         border: 1px solid #e5e7eb;
         margin-bottom: 20px;
     }
@@ -1790,18 +1824,18 @@ const adminStyles = `
     .reply {
         padding: 15px;
         margin-bottom: 10px;
-        border-radius: var(--border-radius);
+        border-radius: 8px;
         border: 1px solid #e5e7eb;
     }
     
     .staff-reply {
         background-color: #dbeafe;
-        border-left: 4px solid var(--primary-color);
+        border-left: 4px solid #007bff;
     }
     
     .user-reply {
         background-color: #f3f4f6;
-        border-left: 4px solid var(--gray-color);
+        border-left: 4px solid #6c757d;
     }
     
     .reply-header {
@@ -1809,7 +1843,7 @@ const adminStyles = `
         justify-content: space-between;
         margin-bottom: 8px;
         font-size: 0.875rem;
-        color: var(--gray-color);
+        color: #666;
     }
     
     .reply-author {
@@ -1838,20 +1872,20 @@ const adminStyles = `
     
     .info-label {
         font-size: 0.875rem;
-        color: var(--gray-color);
+        color: #666;
     }
     
     .info-value {
         font-weight: 600;
-        color: var(--dark-color);
+        color: #333;
     }
     
     .info-value.online {
-        color: var(--success-color);
+        color: #28a745;
     }
     
     .info-value.offline {
-        color: var(--danger-color);
+        color: #dc3545;
     }
     
     .health-check {
@@ -1865,7 +1899,7 @@ const adminStyles = `
         justify-content: space-between;
         padding: 10px;
         background: #f8fafc;
-        border-radius: var(--border-radius);
+        border-radius: 8px;
         border: 1px solid #e5e7eb;
     }
     
@@ -1874,11 +1908,11 @@ const adminStyles = `
     }
     
     .health-item .status.healthy {
-        color: var(--success-color);
+        color: #28a745;
     }
     
     .health-item .status.unhealthy {
-        color: var(--danger-color);
+        color: #dc3545;
     }
     
     .pagination-controls {
@@ -1890,7 +1924,7 @@ const adminStyles = `
     }
     
     .page-info {
-        color: var(--gray-color);
+        color: #666;
         font-size: 0.875rem;
     }
     
@@ -1906,7 +1940,7 @@ const adminStyles = `
     }
     
     .btn-warning {
-        background-color: var(--warning-color);
+        background-color: #ffc107;
         color: white;
         border: none;
     }
@@ -1922,14 +1956,61 @@ const adminStyles = `
     
     .proof-image img {
         max-width: 100%;
-        border-radius: var(--border-radius);
-        box-shadow: var(--box-shadow);
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     }
     
     .proof-actions {
         display: flex;
         gap: 10px;
         justify-content: center;
+    }
+    
+    .notification {
+        padding: 12px 16px;
+        border-radius: 6px;
+        color: white;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        animation: slideIn 0.3s ease;
+    }
+    
+    .notification-success {
+        background-color: #28a745;
+    }
+    
+    .notification-error {
+        background-color: #dc3545;
+    }
+    
+    .notification-info {
+        background-color: #17a2b8;
+    }
+    
+    .notification-warning {
+        background-color: #ffc107;
+        color: #333;
+    }
+    
+    .notification button {
+        background: none;
+        border: none;
+        color: white;
+        cursor: pointer;
+        font-size: 18px;
+        margin-left: 10px;
+    }
+    
+    @keyframes slideIn {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
     }
 `;
 
