@@ -1,5 +1,5 @@
 // Main JavaScript File
-const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = 'https://e-acquire-socials.onrender.com';
 
 // DOM Elements
 let userData = null;
@@ -410,4 +410,5 @@ function requireAdmin(redirectTo = 'dashboard.html') {
 function calculateOrderCost(ratePer1000, quantity) {
     const cost = (ratePer1000 / 1000) * quantity;
     return Math.ceil(cost);
+
 }
