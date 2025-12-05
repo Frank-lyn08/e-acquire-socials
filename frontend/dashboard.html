@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - E-Acquire</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/dashboard.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <i class="fas fa-rocket"></i>
+                <span>E-Acquire</span>
+            </div>
+            <div class="nav-menu">
+                <a href="index.html" class="nav-link">Home</a>
+                <a href="#overview" class="nav-link active">Dashboard</a>
+                <a href="#services" class="nav-link">Services</a>
+                <a href="#deposit" class="nav-link">Deposit</a>
+                <a href="#orders" class="nav-link">Orders</a>
+                <a href="#support" class="nav-link">Support</a>
+            </div>
+            <div class="nav-auth">
+                <!-- Will be populated by JavaScript -->
+            </div>
+            <button class="menu-toggle" id="mobile-menu">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Main Dashboard -->
+    <div class="dashboard-container">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="user-info">
+                <div class="user-avatar">
+                    <i class="fas fa-user-circle"></i>
+                </div>
+                <h3 id="user-username">Loading...</h3>
+                <p id="user-email">Loading...</p>
+                <div class="user-balance">
+                    <span class="balance-label">Balance</span>
+                    <span class="balance-amount" id="user-balance">0 Equities</span>
+                    <span class="balance-naira" id="user-balance-naira">₦0</span>
+                </div>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <a href="#overview" class="sidebar-link active" data-section="overview">
+                    <i class="fas fa-tachometer-alt"></i>
+                    <span>Overview</span>
+                </a>
+                <a href="#deposit" class="sidebar-link" data-section="deposit">
+                    <i class="fas fa-money-bill-wave"></i>
+                    <span>Deposit Funds</span>
+                </a>
+                <a href="#services" class="sidebar-link" data-section="services">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span>Buy Services</span>
+                </a>
+                <a href="#orders" class="sidebar-link" data-section="orders">
+                    <i class="fas fa-history"></i>
+                    <span>My Orders</span>
+                </a>
+                <a href="#transactions" class="sidebar-link" data-section="transactions">
+                    <i class="fas fa-exchange-alt"></i>
+                    <span>Transactions</span>
+                </a>
+                <a href="#support" class="sidebar-link" data-section="support">
+                    <i class="fas fa-headset"></i>
+                    <span>Support</span>
+                </a>
+                <a href="#referral" class="sidebar-link" data-section="referral">
+                    <i class="fas fa-user-friends"></i>
+                    <span>Referral Program</span>
+                </a>
+                <a href="#profile" class="sidebar-link" data-section="profile">
+                    <i class="fas fa-user-cog"></i>
+                    <span>Profile Settings</span>
+                </a>
+                <a href="#" class="sidebar-link" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
+                </a>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <div class="referral-code">
+                    <span>Your Referral Code:</span>
+                    <code id="user-referral-code">Loading...</code>
+                    <button class="btn-copy" onclick="copyReferralCode()">
+                        <i class="fas fa-copy"></i>
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content" id="main-content">
+            <!-- Overview Section -->
+            <section class="dashboard-section active" id="overview-section">
+                <div class="section-header">
+                    <h2>Dashboard Overview</h2>
+                    <div class="section-actions">
+                        <button class="btn btn-primary" onclick="showDepositModal()">
+                            <i class="fas fa-plus"></i> Add Funds
+                        </button>
+                        <button class="btn btn-outline" onclick="loadServices()">
+                            <i class="fas fa-shopping-cart"></i> Order Services
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon primary">
+                            <i class="fas fa-wallet"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>Current Balance</h3>
+                            <div class="stat-amount" id="overview-balance">0 Equities</div>
+                            <div class="stat-sub" id="overview-balance-naira">₦0</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon success">
+                            <i class="fas fa-shopping-cart"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>Total Orders</h3>
+                            <div class="stat-amount" id="overview-orders">0</div>
+                            <div class="stat-sub">Orders placed</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon warning">
+                            <i class="fas fa-money-bill-wave"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>Total Spent</h3>
+                            <div class="stat-amount" id="overview-spent">0 Equities</div>
+                            <div class="stat-sub">All time</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon info">
+                            <i class="fas fa-user-friends"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>Referral Earnings</h3>
+                            <div class="stat-amount" id="overview-referral">0 Equities</div>
+                            <div class="stat-sub" id="overview-referral-count">0 Referrals</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="content-grid">
+                    <div class="content-card">
+                        <div class="card-header">
+                            <h3>Recent Orders</h3>
+                            <a href="#orders" class="btn-view-all">View All</a>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-container">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Order ID</th>
+                                            <th>Service</th>
+                                            <th>Quantity</th>
+                                            <th>Cost</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="recent-orders">
+                                        <tr>
+                                            <td colspan="5" class="text-center">Loading orders...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="content-card">
+                        <div class="card-header">
+                            <h3>Quick Actions</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="quick-actions">
+                                <button class="quick-action" onclick="showDepositModal()">
+                                    <div class="action-icon deposit">
+                                        <i class="fas fa-money-bill-wave"></i>
+                                    </div>
+                                    <span>Deposit Funds</span>
+                                </button>
+                                
+                                <button class="quick-action" onclick="loadServices()">
+                                    <div class="action-icon order">
+                                        <i class="fas fa-shopping-cart"></i>
+                                    </div>
+                                    <span>New Order</span>
+                                </button>
+                                
+                                <button class="quick-action" onclick="showSupportModal()">
+                                    <div class="action-icon support">
+                                        <i class="fas fa-headset"></i>
+                                    </div>
+                                    <span>Get Support</span>
+                                </button>
+                                
+                                <button class="quick-action" onclick="copyReferralCode()">
+                                    <div class="action-icon referral">
+                                        <i class="fas fa-share-alt"></i>
+                                    </div>
+                                    <span>Share Referral</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Deposit Section -->
+            <section class="dashboard-section" id="deposit-section">
+                <div class="section-header">
+                    <h2>Deposit Funds</h2>
+                    <div class="section-actions">
+                        <button class="btn btn-primary" onclick="showDepositModal()">
+                            <i class="fas fa-plus"></i> New Deposit
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="deposit-info">
+                    <div class="info-card">
+                        <div class="info-icon">
+                            <i class="fas fa-info-circle"></i>
+                        </div>
+                        <div class="info-content">
+                            <h4>How to Deposit</h4>
+                            <ol>
+                                <li>Click "New Deposit" and enter amount</li>
+                                <li>Send money to provided account details</li>
+                                <li>Upload payment proof</li>
+                                <li>Wait for admin verification (2-12 hours)</li>
+                                <li>Equities will be added to your account</li>
+                            </ol>
+                            <p><strong>Note:</strong> 1 Equity = ₦10. Minimum deposit: ₦500 (50 equities)</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="content-card">
+                    <div class="card-header">
+                        <h3>Deposit History</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Transaction ID</th>
+                                        <th>Amount</th>
+                                        <th>Equities</th>
+                                        <th>Status</th>
+                                        <th>Date</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="deposit-history">
+                                    <tr>
+                                        <td colspan="6" class="text-center">Loading deposit history...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Services Section -->
+            <section class="dashboard-section" id="services-section">
+                <div class="section-header">
+                    <h2>Buy Services</h2>
+                    <div class="section-actions">
+                        <div class="search-box">
+                            <input type="text" id="service-search" placeholder="Search services..." onkeyup="searchServices()">
+                            <i class="fas fa-search"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="services-filter">
+                    <div class="filter-tabs">
+                        <button class="filter-tab active" data-platform="all">All</button>
+                        <button class="filter-tab" data-platform="instagram">
+                            <i class="fab fa-instagram"></i> Instagram
+                        </button>
+                        <button class="filter-tab" data-platform="tiktok">
+                            <i class="fab fa-tiktok"></i> TikTok
+                        </button>
+                        <button class="filter-tab" data-platform="youtube">
+                            <i class="fab fa-youtube"></i> YouTube
+                        </button>
+                        <button class="filter-tab" data-platform="twitter">
+                            <i class="fab fa-twitter"></i> Twitter
+                        </button>
+                        <button class="filter-tab" data-platform="facebook">
+                            <i class="fab fa-facebook"></i> Facebook
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="services-container">
+                    <div class="text-center">
+                        <div class="loading-spinner"></div>
+                        <p>Loading services...</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Orders Section -->
+            <section class="dashboard-section" id="orders-section">
+                <div class="section-header">
+                    <h2>My Orders</h2>
+                    <div class="section-actions">
+                        <select id="order-filter" class="form-select" onchange="loadOrders()">
+                            <option value="all">All Orders</option>
+                            <option value="pending">Pending</option>
+                            <option value="processing">Processing</option>
+                            <option value="completed">Completed</option>
+                            <option value="cancelled">Cancelled</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="content-card">
+                    <div class="card-body">
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Order ID</th>
+                                        <th>Service</th>
+                                        <th>Platform</th>
+                                        <th>Target</th>
+                                        <th>Quantity</th>
+                                        <th>Cost</th>
+                                        <th>Status</th>
+                                        <th>Date</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="orders-table">
+                                    <tr>
+                                        <td colspan="9" class="text-center">Loading orders...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Transactions Section -->
+            <section class="dashboard-section" id="transactions-section">
+                <div class="section-header">
+                    <h2>Transactions</h2>
+                    <div class="section-actions">
+                        <select id="transaction-filter" class="form-select" onchange="loadTransactions()">
+                            <option value="all">All Transactions</option>
+                            <option value="deposit">Deposits</option>
+                            <option value="order">Orders</option>
+                            <option value="refund">Refunds</option>
+                            <option value="referral">Referrals</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="content-card">
+                    <div class="card-body">
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Transaction ID</th>
+                                        <th>Type</th>
+                                        <th>Amount</th>
+                                        <th>Equities</th>
+                                        <th>Status</th>
+                                        <th>Date</th>
+                                        <th>Reference</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="transactions-table">
+                                    <tr>
+                                        <td colspan="7" class="text-center">Loading transactions...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Support Section -->
+            <section class="dashboard-section" id="support-section">
+                <div class="section-header">
+                    <h2>Customer Support</h2>
+                    <div class="section-actions">
+                        <button class="btn btn-primary" onclick="showSupportModal()">
+                            <i class="fas fa-plus"></i> New Ticket
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="content-grid">
+                    <div class="content-card">
+                        <div class="card-header">
+                            <h3>My Support Tickets</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-container">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Ticket ID</th>
+                                            <th>Subject</th>
+                                            <th>Status</th>
+                                            <th>Priority</th>
+                                            <th>Created</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tickets-table">
+                                        <tr>
+                                            <td colspan="6" class="text-center">Loading tickets...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="content-card">
+                        <div class="card-header">
+                            <h3>FAQ</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="faq-list">
+                                <div class="faq-item">
+                                    <button class="faq-question">
+                                        How long do deposits take to process?
+                                        <i class="fas fa-chevron-down"></i>
+                                    </button>
+                                    <div class="faq-answer">
+                                        <p>Deposits are usually verified within 2-12 hours after proof upload.</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="faq-item">
+                                    <button class="faq-question">
+                                        Can I cancel an order?
+                                        <i class="fas fa-chevron-down"></i>
+                                    </button>
+                                    <div class="faq-answer">
+                                        <p>Only if the service supports cancellation. Check service details before ordering.</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="faq-item">
+                                    <button class="faq-question">
+                                        What is the referral bonus?
+                                        <i class="fas fa-chevron-down"></i>
+                                    </button>
+                                    <div class="faq-answer">
+                                        <p>You get 10% of your referrals' first deposit as bonus equities.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Referral Section -->
+            <section class="dashboard-section" id="referral-section">
+                <div class="section-header">
+                    <h2>Referral Program</h2>
+                </div>
+                
+                <div class="referral-stats">
+                    <div class="stat-card">
+                        <div class="stat-content">
+                            <h3>Your Referral Code</h3>
+                            <div class="referral-code-display">
+                                <code id="referral-code-display">Loading...</code>
+                                <button class="btn btn-outline" onclick="copyReferralCode()">
+                                    <i class="fas fa-copy"></i> Copy
+                                </button>
+                            </div>
+                            <p class="text-muted">Share this code with friends to earn 10% of their first deposit!</p>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-content">
+                            <h3>Referral Stats</h3>
+                            <div class="referral-numbers">
+                                <div class="referral-stat">
+                                    <span class="stat-label">Total Referrals</span>
+                                    <span class="stat-value" id="referral-count">0</span>
+                                </div>
+                                <div class="referral-stat">
+                                    <span class="stat-label">Total Earnings</span>
+                                    <span class="stat-value" id="referral-earnings">0 Equities</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="content-card">
+                    <div class="card-header">
+                        <h3>How Referral Works</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="steps">
+                            <div class="step">
+                                <div class="step-number">1</div>
+                                <div class="step-content">
+                                    <h4>Share Your Code</h4>
+                                    <p>Give your referral code to friends</p>
+                                </div>
+                            </div>
+                            <div class="step">
+                                <div class="step-number">2</div>
+                                <div class="step-content">
+                                    <h4>They Register</h4>
+                                    <p>Friends enter your code when registering</p>
+                                </div>
+                            </div>
+                            <div class="step">
+                                <div class="step-number">3</div>
+                                <div class="step-content">
+                                    <h4>They Deposit</h4>
+                                    <p>Friends make their first deposit</p>
+                                </div>
+                            </div>
+                            <div class="step">
+                                <div class="step-number">4</div>
+                                <div class="step-content">
+                                    <h4>You Earn</h4>
+                                    <p>You get 10% of their first deposit as bonus</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="content-card">
+                    <div class="card-header">
+                        <h3>Share Your Referral Link</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="share-buttons">
+                            <button class="btn share-btn whatsapp" onclick="shareWhatsApp()">
+                                <i class="fab fa-whatsapp"></i> WhatsApp
+                            </button>
+                            <button class="btn share-btn telegram" onclick="shareTelegram()">
+                                <i class="fab fa-telegram"></i> Telegram
+                            </button>
+                            <button class="btn share-btn copy-link" onclick="copyReferralLink()">
+                                <i class="fas fa-link"></i> Copy Link
+                            </button>
+                        </div>
+                        <div class="referral-link">
+                            <input type="text" id="referral-link-input" readonly value="Loading...">
+                            <button class="btn btn-outline" onclick="copyReferralLink()">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Profile Section -->
+            <section class="dashboard-section" id="profile-section">
+                <div class="section-header">
+                    <h2>Profile Settings</h2>
+                </div>
+                
+                <div class="content-grid">
+                    <div class="content-card">
+                        <div class="card-header">
+                            <h3>Account Information</h3>
+                        </div>
+                        <div class="card-body">
+                            <form id="profile-form">
+                                <div class="form-group">
+                                    <label for="profile-username">Username</label>
+                                    <input type="text" id="profile-username" class="form-control" disabled>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="profile-email">Email Address</label>
+                                    <input type="email" id="profile-email" class="form-control" disabled>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="profile-phone">Phone Number</label>
+                                    <input type="tel" id="profile-phone" class="form-control">
+                                    <div class="form-error" id="profile-phone-error"></div>
+                                </div>
+                                
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save"></i> Update Profile
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    
+                    <div class="content-card">
+                        <div class="card-header">
+                            <h3>Change Password</h3>
+                        </div>
+                        <div class="card-body">
+                            <form id="password-form">
+                                <div class="form-group">
+                                    <label for="current-password">Current Password</label>
+                                    <input type="password" id="current-password" class="form-control" required>
+                                    <div class="form-error" id="current-password-error"></div>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="new-password">New Password</label>
+                                    <input type="password" id="new-password" class="form-control" required>
+                                    <div class="form-error" id="new-password-error"></div>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="confirm-password">Confirm New Password</label>
+                                    <input type="password" id="confirm-password" class="form-control" required>
+                                    <div class="form-error" id="confirm-password-error"></div>
+                                </div>
+                                
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-key"></i> Change Password
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Modals -->
+    <div class="modal" id="deposit-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Deposit Funds</h3>
+                <button class="modal-close" onclick="hideModal('deposit-modal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="deposit-form">
+                    <div class="form-group">
+                        <label for="deposit-amount">Amount (₦)</label>
+                        <input type="number" id="deposit-amount" class="form-control" min="500" max="500000" step="100" required>
+                        <div class="form-hint">Minimum: ₦500 (50 equities), Maximum: ₦500,000</div>
+                        <div class="form-error" id="deposit-amount-error"></div>
+                    </div>
+                    
+                    <div class="amount-preview">
+                        <div class="preview-item">
+                            <span>Amount:</span>
+                            <span id="preview-amount">₦0</span>
+                        </div>
+                        <div class="preview-item">
+                            <span>Equities:</span>
+                            <span id="preview-equities">0 Equities</span>
+                        </div>
+                        <div class="preview-item">
+                            <span>You'll receive:</span>
+                            <span id="preview-receive">0 Equities</span>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary btn-block">
+                        <i class="fas fa-money-bill-wave"></i> Proceed to Payment
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="order-modal">
+        <div class="modal-content wide">
+            <div class="modal-header">
+                <h3>Place Order</h3>
+                <button class="modal-close" onclick="hideModal('order-modal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div id="order-modal-content">
+                    <!-- Will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="support-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Create Support Ticket</h3>
+                <button class="modal-close" onclick="hideModal('support-modal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="support-form">
+                    <div class="form-group">
+                        <label for="ticket-subject">Subject</label>
+                        <input type="text" id="ticket-subject" class="form-control" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="ticket-category">Category</label>
+                        <select id="ticket-category" class="form-control" required>
+                            <option value="">Select category</option>
+                            <option value="deposit">Deposit Issue</option>
+                            <option value="order">Order Problem</option>
+                            <option value="technical">Technical Issue</option>
+                            <option value="account">Account Problem</option>
+                            <option value="refund">Refund Request</option>
+                            <option value="general">General Inquiry</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="ticket-message">Message</label>
+                        <textarea id="ticket-message" class="form-control" rows="5" required></textarea>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary btn-block">
+                        <i class="fas fa-paper-plane"></i> Submit Ticket
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-overlay"></div>
+
+    <script src="js/main.js"></script>
+    <script src="js/dashboard.js"></script>
+</body>
+</html>

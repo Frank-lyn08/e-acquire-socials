@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - E-Acquire</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/dashboard.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <i class="fas fa-rocket"></i>
+                <span>E-Acquire Admin</span>
+            </div>
+            <div class="nav-menu">
+                <a href="index.html" class="nav-link">Home</a>
+                <a href="#overview" class="nav-link active">Dashboard</a>
+                <a href="#users" class="nav-link">Users</a>
+                <a href="#deposits" class="nav-link">Deposits</a>
+                <a href="#orders" class="nav-link">Orders</a>
+                <a href="#services" class="nav-link">Services</a>
+                <a href="#support" class="nav-link">Support</a>
+                <a href="#settings" class="nav-link">Settings</a>
+            </div>
+            <div class="nav-auth">
+                <!-- Will be populated by JavaScript -->
+            </div>
+            <button class="menu-toggle" id="mobile-menu">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Main Admin Panel -->
+    <div class="dashboard-container">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="user-info">
+                <div class="user-avatar">
+                    <i class="fas fa-user-shield"></i>
+                </div>
+                <h3 id="admin-username">Admin</h3>
+                <p id="admin-email">admin@e-acquire.com</p>
+                <div class="user-balance">
+                    <span class="balance-label">Admin Panel</span>
+                    <span class="balance-amount">System</span>
+                    <span class="balance-naira">Control Center</span>
+                </div>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <a href="#overview" class="sidebar-link active" data-section="overview">
+                    <i class="fas fa-tachometer-alt"></i>
+                    <span>Overview</span>
+                </a>
+                <a href="#users" class="sidebar-link" data-section="users">
+                    <i class="fas fa-users"></i>
+                    <span>Manage Users</span>
+                </a>
+                <a href="#deposits" class="sidebar-link" data-section="deposits">
+                    <i class="fas fa-money-bill-wave"></i>
+                    <span>Pending Deposits</span>
+                    <span class="badge" id="pending-deposits-count">0</span>
+                </a>
+                <a href="#orders" class="sidebar-link" data-section="orders">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span>All Orders</span>
+                </a>
+                <a href="#transactions" class="sidebar-link" data-section="transactions">
+                    <i class="fas fa-exchange-alt"></i>
+                    <span>Transactions</span>
+                </a>
+                <a href="#services" class="sidebar-link" data-section="services">
+                    <i class="fas fa-cogs"></i>
+                    <span>Services</span>
+                </a>
+                <a href="#support" class="sidebar-link" data-section="support">
+                    <i class="fas fa-headset"></i>
+                    <span>Support Tickets</span>
+                    <span class="badge" id="pending-tickets-count">0</span>
+                </a>
+                <a href="#settings" class="sidebar-link" data-section="settings">
+                    <i class="fas fa-sliders-h"></i>
+                    <span>Settings</span>
+                </a>
+                <a href="dashboard.html" class="sidebar-link">
+                    <i class="fas fa-user"></i>
+                    <span>User Dashboard</span>
+                </a>
+                <a href="#" class="sidebar-link" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
+                </a>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <div class="system-info">
+                    <div class="info-item">
+                        <span>System Status:</span>
+                        <span class="status-indicator online">Online</span>
+                    </div>
+                    <div class="info-item">
+                        <span>API Status:</span>
+                        <span class="status-indicator" id="api-status">Checking...</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content" id="main-content">
+            <!-- Overview Section -->
+            <section class="dashboard-section active" id="overview-section">
+                <div class="section-header">
+                    <h2>Admin Dashboard</h2>
+                    <div class="section-actions">
+                        <button class="btn btn-primary" onclick="syncServices()">
+                            <i class="fas fa-sync"></i> Sync Services
+                        </button>
+                        <button class="btn btn-outline" onclick="checkSystemHealth()">
+                            <i class="fas fa-heartbeat"></i> System Health
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon primary">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>Total Users</h3>
+                            <div class="stat-amount" id="total-users">0</div>
+                            <div class="stat-sub">Registered users</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon success">
+                            <i class="fas fa-shopping-cart"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>Total Orders</h3>
+                            <div class="stat-amount" id="total-orders">0</div>
+                            <div class="stat-sub">All time orders</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon warning">
+                            <i class="fas fa-money-bill-wave"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>Total Deposits</h3>
+                            <div class="stat-amount" id="total-deposits">₦0</div>
+                            <div class="stat-sub">Approved deposits</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon info">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>Total Revenue</h3>
+                            <div class="stat-amount" id="total-revenue">0 Equities</div>
+                            <div class="stat-sub">Platform earnings</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon danger">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>Pending Deposits</h3>
+                            <div class="stat-amount" id="pending-deposits">0</div>
+                            <div class="stat-sub">Awaiting approval</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon secondary">
+                            <i class="fas fa-headset"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>Open Tickets</h3>
+                            <div class="stat-amount" id="open-tickets">0</div>
+                            <div class="stat-sub">Support tickets</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="content-grid">
+                    <div class="content-card">
+                        <div class="card-header">
+                            <h3>Recent Users</h3>
+                            <a href="#users" class="btn-view-all">View All</a>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-container">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Username</th>
+                                            <th>Email</th>
+                                            <th>Balance</th>
+                                            <th>Joined</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="recent-users">
+                                        <tr>
+                                            <td colspan="5" class="text-center">Loading users...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="content-card">
+                        <div class="card-header">
+                            <h3>Recent Orders</h3>
+                            <a href="#orders" class="btn-view-all">View All</a>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-container">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Order ID</th>
+                                            <th>User</th>
+                                            <th>Service</th>
+                                            <th>Amount</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="recent-orders">
+                                        <tr>
+                                            <td colspan="5" class="text-center">Loading orders...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="content-card">
+                    <div class="card-header">
+                        <h3>System Information</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="system-info-grid">
+                            <div class="info-item">
+                                <span class="info-label">Backend Status:</span>
+                                <span class="info-value" id="backend-status">Checking...</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Database:</span>
+                                <span class="info-value" id="database-status">Checking...</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Thekclaut API:</span>
+                                <span class="info-value" id="thekclaut-status">Checking...</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Server Time:</span>
+                                <span class="info-value" id="server-time">--:--:--</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Uptime:</span>
+                                <span class="info-value" id="uptime">--</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Version:</span>
+                                <span class="info-value">1.0.0</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Users Section -->
+            <section class="dashboard-section" id="users-section">
+                <div class="section-header">
+                    <h2>Manage Users</h2>
+                    <div class="section-actions">
+                        <div class="search-box">
+                            <input type="text" id="user-search" placeholder="Search users..." onkeyup="searchUsers()">
+                            <i class="fas fa-search"></i>
+                        </div>
+                        <select id="user-filter" class="form-select" onchange="loadUsers()">
+                            <option value="all">All Users</option>
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                            <option value="admin">Admins</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="content-card">
+                    <div class="card-body">
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Username</th>
+                                        <th>Email</th>
+                                        <th>Phone</th>
+                                        <th>Balance</th>
+                                        <th>Role</th>
+                                        <th>Status</th>
+                                        <th>Joined</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="users-table">
+                                    <tr>
+                                        <td colspan="9" class="text-center">Loading users...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <div class="card-footer">
+                        <div class="pagination" id="users-pagination">
+                            <!-- Pagination will be added here -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Deposits Section -->
+            <section class="dashboard-section" id="deposits-section">
+                <div class="section-header">
+                    <h2>Pending Deposits</h2>
+                    <div class="section-actions">
+                        <button class="btn btn-primary" onclick="loadPendingDeposits()">
+                            <i class="fas fa-sync"></i> Refresh
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="content-card">
+                    <div class="card-header">
+                        <h3>Deposits Awaiting Approval</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Transaction ID</th>
+                                        <th>User</th>
+                                        <th>Amount</th>
+                                        <th>Equities</th>
+                                        <th>Reference</th>
+                                        <th>Proof</th>
+                                        <th>Date</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="pending-deposits-table">
+                                    <tr>
+                                        <td colspan="8" class="text-center">Loading pending deposits...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Orders Section -->
+            <section class="dashboard-section" id="orders-section">
+                <div class="section-header">
+                    <h2>All Orders</h2>
+                    <div class="section-actions">
+                        <div class="search-box">
+                            <input type="text" id="order-search" placeholder="Search orders..." onkeyup="searchOrders()">
+                            <i class="fas fa-search"></i>
+                        </div>
+                        <select id="admin-order-filter" class="form-select" onchange="loadAllOrders()">
+                            <option value="all">All Orders</option>
+                            <option value="pending">Pending</option>
+                            <option value="processing">Processing</option>
+                            <option value="completed">Completed</option>
+                            <option value="cancelled">Cancelled</option>
+                            <option value="failed">Failed</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="content-card">
+                    <div class="card-body">
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Order ID</th>
+                                        <th>User</th>
+                                        <th>Service</th>
+                                        <th>Platform</th>
+                                        <th>Target</th>
+                                        <th>Quantity</th>
+                                        <th>Cost</th>
+                                        <th>Status</th>
+                                        <th>Date</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="all-orders-table">
+                                    <tr>
+                                        <td colspan="10" class="text-center">Loading orders...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <div class="card-footer">
+                        <div class="pagination" id="orders-pagination">
+                            <!-- Pagination will be added here -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Transactions Section -->
+            <section class="dashboard-section" id="transactions-section">
+                <div class="section-header">
+                    <h2>All Transactions</h2>
+                    <div class="section-actions">
+                        <select id="admin-transaction-filter" class="form-select" onchange="loadAllTransactions()">
+                            <option value="all">All Transactions</option>
+                            <option value="deposit">Deposits</option>
+                            <option value="order">Orders</option>
+                            <option value="refund">Refunds</option>
+                            <option value="referral">Referrals</option>
+                            <option value="bonus">Bonuses</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="content-card">
+                    <div class="card-body">
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Transaction ID</th>
+                                        <th>User</th>
+                                        <th>Type</th>
+                                        <th>Amount</th>
+                                        <th>Equities</th>
+                                        <th>Status</th>
+                                        <th>Reference</th>
+                                        <th>Date</th>
+                                        <th>Verified By</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="all-transactions-table">
+                                    <tr>
+                                        <td colspan="9" class="text-center">Loading transactions...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <div class="card-footer">
+                        <div class="pagination" id="transactions-pagination">
+                            <!-- Pagination will be added here -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Services Section -->
+            <section class="dashboard-section" id="services-section">
+                <div class="section-header">
+                    <h2>Manage Services</h2>
+                    <div class="section-actions">
+                        <button class="btn btn-primary" onclick="syncServices()">
+                            <i class="fas fa-sync"></i> Sync from Thekclaut
+                        </button>
+                        <button class="btn btn-outline" onclick="showServiceStats()">
+                            <i class="fas fa-chart-bar"></i> Service Stats
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="content-card">
+                    <div class="card-header">
+                        <h3>Service Statistics</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-content">
+                                    <h3>Total Services</h3>
+                                    <div class="stat-amount" id="total-services">0</div>
+                                    <div class="stat-sub">Active services</div>
+                                </div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-content">
+                                    <h3>By Platform</h3>
+                                    <div class="stat-amount" id="platform-count">0</div>
+                                    <div class="stat-sub">Different platforms</div>
+                                </div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-content">
+                                    <h3>Last Synced</h3>
+                                    <div class="stat-amount" id="last-synced">Never</div>
+                                    <div class="stat-sub">Services update</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="content-card">
+                    <div class="card-header">
+                        <h3>Service List</h3>
+                        <div class="section-actions">
+                            <div class="search-box">
+                                <input type="text" id="service-search-admin" placeholder="Search services..." onkeyup="searchServicesAdmin()">
+                                <i class="fas fa-search"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Service ID</th>
+                                        <th>Name</th>
+                                        <th>Platform</th>
+                                        <th>Type</th>
+                                        <th>Rate</th>
+                                        <th>Our Rate</th>
+                                        <th>Min/Max</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="services-table">
+                                    <tr>
+                                        <td colspan="9" class="text-center">Loading services...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Support Section -->
+            <section class="dashboard-section" id="support-section">
+                <div class="section-header">
+                    <h2>Support Tickets</h2>
+                    <div class="section-actions">
+                        <select id="ticket-filter" class="form-select" onchange="loadSupportTickets()">
+                            <option value="all">All Tickets</option>
+                            <option value="open">Open</option>
+                            <option value="in progress">In Progress</option>
+                            <option value="resolved">Resolved</option>
+                            <option value="closed">Closed</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="content-card">
+                    <div class="card-body">
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Ticket ID</th>
+                                        <th>User</th>
+                                        <th>Subject</th>
+                                        <th>Category</th>
+                                        <th>Priority</th>
+                                        <th>Status</th>
+                                        <th>Created</th>
+                                        <th>Last Update</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="all-tickets-table">
+                                    <tr>
+                                        <td colspan="9" class="text-center">Loading tickets...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <div class="card-footer">
+                        <div class="pagination" id="tickets-pagination">
+                            <!-- Pagination will be added here -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Settings Section -->
+            <section class="dashboard-section" id="settings-section">
+                <div class="section-header">
+                    <h2>System Settings</h2>
+                </div>
+                
+                <div class="content-grid">
+                    <div class="content-card">
+                        <div class="card-header">
+                            <h3>General Settings</h3>
+                        </div>
+                        <div class="card-body">
+                            <form id="general-settings">
+                                <div class="form-group">
+                                    <label for="site-name">Site Name</label>
+                                    <input type="text" id="site-name" class="form-control" value="E-Acquire">
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="site-url">Site URL</label>
+                                    <input type="url" id="site-url" class="form-control" value="https://e-acquire.netlify.app">
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="contact-email">Contact Email</label>
+                                    <input type="email" id="contact-email" class="form-control" value="support@e-acquire.com">
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="currency">Currency</label>
+                                    <select id="currency" class="form-control">
+                                        <option value="NGN" selected>Nigerian Naira (₦)</option>
+                                        <option value="USD">US Dollar ($)</option>
+                                    </select>
+                                </div>
+                                
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save"></i> Save Settings
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    
+                    <div class="content-card">
+                        <div class="card-header">
+                            <h3>API Settings</h3>
+                        </div>
+                        <div class="card-body">
+                            <form id="api-settings">
+                                <div class="form-group">
+                                    <label for="thekclaut-api-key">Thekclaut API Key</label>
+                                    <input type="password" id="thekclaut-api-key" class="form-control" placeholder="Enter API key">
+                                    <div class="form-hint">Used to sync services and place orders</div>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="api-base-url">API Base URL</label>
+                                    <input type="url" id="api-base-url" class="form-control" value="http://localhost:5000">
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="jwt-secret">JWT Secret</label>
+                                    <input type="password" id="jwt-secret" class="form-control" placeholder="Enter JWT secret">
+                                </div>
+                                
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-key"></i> Update API Settings
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    
+                    <div class="content-card">
+                        <div class="card-header">
+                            <h3>Deposit Settings</h3>
+                        </div>
+                        <div class="card-body">
+                            <form id="deposit-settings">
+                                <div class="form-group">
+                                    <label for="min-deposit">Minimum Deposit (₦)</label>
+                                    <input type="number" id="min-deposit" class="form-control" value="500">
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="max-deposit">Maximum Deposit (₦)</label>
+                                    <input type="number" id="max-deposit" class="form-control" value="500000">
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="account-name">Account Name</label>
+                                    <input type="text" id="account-name" class="form-control" value="E-Acquire">
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="account-number">Account Number</label>
+                                    <input type="text" id="account-number" class="form-control" value="1234567890">
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="bank-name">Bank Name</label>
+                                    <input type="text" id="bank-name" class="form-control" value="Moniepoint">
+                                </div>
+                                
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-money-bill-wave"></i> Update Deposit Settings
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    
+                    <div class="content-card">
+                        <div class="card-header">
+                            <h3>System Maintenance</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="maintenance-actions">
+                                <button class="btn btn-outline btn-block" onclick="clearCache()">
+                                    <i class="fas fa-broom"></i> Clear Cache
+                                </button>
+                                
+                                <button class="btn btn-outline btn-block" onclick="backupDatabase()">
+                                    <i class="fas fa-database"></i> Backup Database
+                                </button>
+                                
+                                <button class="btn btn-warning btn-block" onclick="showMaintenanceModal()">
+                                    <i class="fas fa-tools"></i> Maintenance Mode
+                                </button>
+                                
+                                <button class="btn btn-danger btn-block" onclick="resetSystem()">
+                                    <i class="fas fa-redo"></i> Reset System (Danger)
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Modals -->
+    <div class="modal" id="user-details-modal">
+        <div class="modal-content wide">
+            <div class="modal-header">
+                <h3>User Details</h3>
+                <button class="modal-close" onclick="hideModal('user-details-modal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div id="user-details-content">
+                    <!-- Will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="deposit-action-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Process Deposit</h3>
+                <button class="modal-close" onclick="hideModal('deposit-action-modal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div id="deposit-action-content">
+                    <!-- Will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="order-details-modal">
+        <div class="modal-content wide">
+            <div class="modal-header">
+                <h3>Order Details</h3>
+                <button class="modal-close" onclick="hideModal('order-details-modal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div id="order-details-content">
+                    <!-- Will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="ticket-details-modal">
+        <div class="modal-content wide">
+            <div class="modal-header">
+                <h3>Ticket Details</h3>
+                <button class="modal-close" onclick="hideModal('ticket-details-modal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div id="ticket-details-content">
+                    <!-- Will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="system-health-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>System Health Check</h3>
+                <button class="modal-close" onclick="hideModal('system-health-modal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div id="system-health-content">
+                    <!-- Will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-overlay"></div>
+
+    <script src="js/main.js"></script>
+    <script src="js/admin.js"></script>
+</body>
+</html>
