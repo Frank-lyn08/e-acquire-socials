@@ -76,7 +76,7 @@ const allowedOrigins = [
   'http://localhost:3000',
   'http://127.0.0.1:5500',
   'http://localhost:5500',
-  'https://e-acquire.netlify.app',
+  'https://eacquire.netlify.app',
   process.env.FRONTEND_URL
 ].filter(Boolean);
 
@@ -3693,6 +3693,7 @@ process.on('SIGINT', () => {
 // Export app for testing
 
 module.exports = app;
+
 
 
 
