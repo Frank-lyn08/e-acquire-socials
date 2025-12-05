@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/auth.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
     <div class="auth-container">
@@ -17,57 +18,66 @@
             </div>
             
             <div class="auth-body">
-                <div id="alert" class="alert" style="display: none;"></div>
+                <!-- Alert container - Don't set display:none here, let JS handle it -->
+                <div id="alert" class="alert d-none"></div>
                 
                 <form class="auth-form" id="loginForm">
                     <div class="form-group">
                         <label for="email">Email Address</label>
-                        <input type="email" id="email" name="email" placeholder="Enter your email" required>
-                        <div class="form-error" id="email-error"></div>
+                        <input type="email" id="email" name="email" placeholder="Enter your email" required class="form-control">
                     </div>
                     
                     <div class="form-group">
                         <label for="password">Password</label>
-                        <input type="password" id="password" name="password" placeholder="Enter your password" required>
-                        <div class="form-error" id="password-error"></div>
+                        <input type="password" id="password" name="password" placeholder="Enter your password" required class="form-control">
                     </div>
                     
-                    <div class="form-check">
-                        <input type="checkbox" id="remember" name="remember">
-                        <label for="remember">Remember me</label>
+                    <div class="form-check mb-3">
+                        <input type="checkbox" id="remember" name="remember" class="form-check-input">
+                        <label for="remember" class="form-check-label">Remember me</label>
                     </div>
                     
-                    <button type="submit" class="btn btn-primary auth-button" id="loginBtn">
-                        <i class="fas fa-sign-in-alt"></i> Login
+                    <button type="submit" class="btn btn-primary auth-button w-100" id="loginBtn">
+                        <i class="fas fa-sign-in-alt me-2"></i> Login
                     </button>
                     
-                    <div class="auth-divider">
+                    <div class="auth-divider my-4">
                         <span>or</span>
                     </div>
                     
-                    <a href="admin.html" class="btn btn-outline auth-button">
-                        <i class="fas fa-cog"></i> Admin Login
+                    <a href="admin.html" class="btn btn-outline-secondary auth-button w-100">
+                        <i class="fas fa-cog me-2"></i> Admin Login
                     </a>
                 </form>
                 
-                <div class="auth-footer">
-                    <p>Don't have an account? <a href="register.html">Register here</a></p>
-                    <p><a href="#">Forgot your password?</a></p>
+                <div class="auth-footer mt-4">
+                    <p class="mb-2">Don't have an account? <a href="register.html">Register here</a></p>
+                    <p class="mb-0"><a href="#" class="text-muted">Forgot your password?</a></p>
                 </div>
             </div>
         </div>
     </div>
 
-    <script src="js/main.js"></script>
+    <!-- Test Connection Button (for debugging) -->
+    <div class="position-fixed bottom-0 end-0 m-3">
+        <button onclick="testConnection()" class="btn btn-sm btn-outline-info">
+            <i class="fas fa-plug"></i> Test Connection
+        </button>
+    </div>
+
+    <!-- Include Bootstrap JS for alerts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Your scripts -->
     <script src="js/auth.js"></script>
     
+    <!-- Initialize on page load -->
     <script>
-        // Initialize auth functionality
         document.addEventListener('DOMContentLoaded', function() {
-            // Check if user is already logged in
-            if (isAuthenticated()) {
-                window.location.href = 'dashboard.html';
-            }
+            console.log('Login page loaded');
+            // Test backend connection on load
+            setTimeout(() => {
+                testConnection();
+            }, 1000);
         });
     </script>
 </body>
