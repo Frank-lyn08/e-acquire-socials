@@ -97,9 +97,11 @@ app.use(cors({
 }));
 
 app.get('/', (req, res) => {
-  const frontendPath = path.join(__dirname, '../frontend', 'index.html');
-  console.log('Looking for file at:', frontendPath); // Check Render logs
-  res.sendFile(frontendPath);
+  res.send(`
+    <h1>✅ E-Acquire Backend is Running!</h1>
+    <p>Thekclaut API is now connected.</p>
+    <p>Visit <a href="/api/health">/api/health</a> for status.</p>
+  `);
 });
 // Handle preflight requests
 app.options('*', cors());
@@ -3691,5 +3693,6 @@ process.on('SIGINT', () => {
 // Export app for testing
 
 module.exports = app;
+
 
 
