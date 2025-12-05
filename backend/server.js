@@ -769,31 +769,60 @@ const authorizeSupport = (req, res, next) => {
 // 9. THEKCLAUT API INTEGRATION
 // ============================
 
-// 9.1 Create API Instance
+// 9.1 Create API Instance - CORRECTED FOR THEKCLAUT API
 const thekclautAPI = axios.create({
   baseURL: process.env.THEKCLAUT_API_URL || 'https://thekclaut.com/api/v2',
   headers: {
-    'Authorization': `Bearer ${process.env.THEKCLAUT_API_KEY}`,
-    'Content-Type': 'application/json'
+    'Content-Type': 'application/x-www-form-urlencoded',
+    'Accept': 'application/json'
   },
   timeout: 30000
 });
 
-// 9.2 Thekclaut API Helper Functions
+// Helper function to convert object to URL-encoded string
+const toFormData = (data) => {
+  return Object.keys(data)
+    .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(data[key])}`)
+    .join('&');
+};
+
+// Debug: Log API configuration on startup
+console.log('🔧 Thekclaut API Configuration:');
+console.log('- Base URL:', thekclautAPI.defaults.baseURL);
+console.log('- API Key configured:', !!process.env.THEKCLAUT_API_KEY);
+console.log('- Using POST with URL-encoded parameters');
+
+// 9.2 Thekclaut API Helper Functions - FULLY FIXED
 const thekclaut = {
   // Get all services
   async getServices() {
     try {
-      const response = await thekclautAPI.get('/services');
+      console.log(`🔍 Calling Thekclaut API: ${thekclautAPI.defaults.baseURL} (action=services)`);
+      
+      const formData = toFormData({
+        key: process.env.THEKCLAUT_API_KEY,
+        action: 'services'
+      });
+      
+      const response = await thekclautAPI.post('', formData);
+      console.log(`✅ Thekclaut API Response [${response.status}]: Received ${Array.isArray(response.data) ? response.data.length : 0} services`);
+      
       return {
         success: true,
         data: response.data
       };
     } catch (error) {
-      console.error('Thekclaut API Error (getServices):', error.message);
+      console.error('❌ Thekclaut API Error (getServices):');
+      console.error('- Error Message:', error.message);
+      console.error('- Response Status:', error.response?.status || 'No response');
+      console.error('- Response Data:', error.response?.data || 'No data');
+      console.error('- Request Data:', error.config?.data || 'No request data');
+      
       return {
         success: false,
-        error: error.message
+        error: error.message,
+        status: error.response?.status,
+        data: error.response?.data
       };
     }
   },
@@ -801,37 +830,70 @@ const thekclaut = {
   // Check balance
   async getBalance() {
     try {
-      const response = await thekclautAPI.get('/balance');
+      console.log(`🔍 Calling Thekclaut API: ${thekclautAPI.defaults.baseURL} (action=balance)`);
+      
+      const formData = toFormData({
+        key: process.env.THEKCLAUT_API_KEY,
+        action: 'balance'
+      });
+      
+      const response = await thekclautAPI.post('', formData);
+      console.log(`✅ Thekclaut API Response [${response.status}]: Balance = $${response.data?.balance || 'N/A'}`);
+      
       return {
         success: true,
         data: response.data
       };
     } catch (error) {
-      console.error('Thekclaut API Error (getBalance):', error.message);
+      console.error('❌ Thekclaut API Error (getBalance):');
+      console.error('- Error Message:', error.message);
+      console.error('- Response Status:', error.response?.status || 'No response');
+      console.error('- Response Data:', error.response?.data || 'No data');
+      
       return {
         success: false,
-        error: error.message
+        error: error.message,
+        status: error.response?.status,
+        data: error.response?.data
       };
     }
   },
 
   // Place order
-  async placeOrder(serviceId, link, quantity) {
+  async placeOrder(serviceId, link, quantity, runs = null, interval = null) {
     try {
-      const response = await thekclautAPI.post('/add', {
+      console.log(`🔍 Calling Thekclaut API: ${thekclautAPI.defaults.baseURL} (action=add)`);
+      console.log(`📦 Order Data: service=${serviceId}, link=${link}, quantity=${quantity}`);
+      
+      const formData = {
+        key: process.env.THEKCLAUT_API_KEY,
+        action: 'add',
         service: serviceId,
         link: link,
         quantity: quantity
-      });
+      };
+      
+      // Add optional parameters
+      if (runs) formData.runs = runs;
+      if (interval) formData.interval = interval;
+      
+      const response = await thekclautAPI.post('', toFormData(formData));
+      console.log(`✅ Thekclaut API Response [${response.status}]: Order ID = ${response.data?.order || 'N/A'}`);
+      
       return {
         success: true,
         data: response.data
       };
     } catch (error) {
-      console.error('Thekclaut API Error (placeOrder):', error.response?.data || error.message);
+      console.error('❌ Thekclaut API Error (placeOrder):');
+      console.error('- Error Message:', error.message);
+      console.error('- Response Status:', error.response?.status || 'No response');
+      console.error('- Response Data:', error.response?.data || 'No data');
+      
       return {
         success: false,
-        error: error.response?.data || error.message
+        error: error.response?.data || error.message,
+        status: error.response?.status
       };
     }
   },
@@ -839,18 +901,31 @@ const thekclaut = {
   // Check order status
   async checkOrderStatus(orderId) {
     try {
-      const response = await thekclautAPI.get('/status', {
-        params: { order: orderId }
+      console.log(`🔍 Calling Thekclaut API: ${thekclautAPI.defaults.baseURL} (action=status, order=${orderId})`);
+      
+      const formData = toFormData({
+        key: process.env.THEKCLAUT_API_KEY,
+        action: 'status',
+        order: orderId
       });
+      
+      const response = await thekclautAPI.post('', formData);
+      console.log(`✅ Thekclaut API Response [${response.status}]: Status = ${response.data?.status || 'N/A'}`);
+      
       return {
         success: true,
         data: response.data
       };
     } catch (error) {
-      console.error('Thekclaut API Error (checkOrderStatus):', error.message);
+      console.error('❌ Thekclaut API Error (checkOrderStatus):');
+      console.error('- Error Message:', error.message);
+      console.error('- Response Status:', error.response?.status || 'No response');
+      console.error('- Response Data:', error.response?.data || 'No data');
+      
       return {
         success: false,
-        error: error.message
+        error: error.message,
+        status: error.response?.status
       };
     }
   },
@@ -858,18 +933,31 @@ const thekclaut = {
   // Create refill
   async createRefill(orderId) {
     try {
-      const response = await thekclautAPI.post('/refill', {
+      console.log(`🔍 Calling Thekclaut API: ${thekclautAPI.defaults.baseURL} (action=refill, order=${orderId})`);
+      
+      const formData = toFormData({
+        key: process.env.THEKCLAUT_API_KEY,
+        action: 'refill',
         order: orderId
       });
+      
+      const response = await thekclautAPI.post('', formData);
+      console.log(`✅ Thekclaut API Response [${response.status}]: Refill = ${response.data?.refill || 'N/A'}`);
+      
       return {
         success: true,
         data: response.data
       };
     } catch (error) {
-      console.error('Thekclaut API Error (createRefill):', error.message);
+      console.error('❌ Thekclaut API Error (createRefill):');
+      console.error('- Error Message:', error.message);
+      console.error('- Response Status:', error.response?.status || 'No response');
+      console.error('- Response Data:', error.response?.data || 'No data');
+      
       return {
         success: false,
-        error: error.message
+        error: error.message,
+        status: error.response?.status
       };
     }
   },
@@ -877,18 +965,31 @@ const thekclaut = {
   // Cancel order
   async cancelOrder(orderId) {
     try {
-      const response = await thekclautAPI.post('/cancel', {
-        order: orderId
+      console.log(`🔍 Calling Thekclaut API: ${thekclautAPI.defaults.baseURL} (action=cancel, orders=${orderId})`);
+      
+      const formData = toFormData({
+        key: process.env.THEKCLAUT_API_KEY,
+        action: 'cancel',
+        orders: orderId
       });
+      
+      const response = await thekclautAPI.post('', formData);
+      console.log(`✅ Thekclaut API Response [${response.status}]: Cancel response received`);
+      
       return {
         success: true,
         data: response.data
       };
     } catch (error) {
-      console.error('Thekclaut API Error (cancelOrder):', error.message);
+      console.error('❌ Thekclaut API Error (cancelOrder):');
+      console.error('- Error Message:', error.message);
+      console.error('- Response Status:', error.response?.status || 'No response');
+      console.error('- Response Data:', error.response?.data || 'No data');
+      
       return {
         success: false,
-        error: error.message
+        error: error.message,
+        status: error.response?.status
       };
     }
   }
@@ -951,14 +1052,31 @@ const updateServicesFromThekclaut = async () => {
       return { success: false, error: response.error };
     }
 
+    // IMPORTANT: Thekclaut returns array of services, not nested
     const services = response.data;
+    
+    if (!Array.isArray(services)) {
+      console.error('❌ Invalid services response:', services);
+      return { success: false, error: 'Invalid services response format' };
+    }
+    
+    console.log(`📊 Received ${services.length} services from Thekclaut`);
+    
     let updatedCount = 0;
     let newCount = 0;
     let errorCount = 0;
 
     for (const service of services) {
       try {
-        const ourPrice = calculateOurPrice(service.rate);
+        // Convert rate from string to number
+        const rate = parseFloat(service.rate);
+        
+        if (isNaN(rate)) {
+          console.warn(`⚠️ Invalid rate for service ${service.service}: ${service.rate}`);
+          continue;
+        }
+        
+        const ourPrice = calculateOurPrice(rate);
         
         let platform = 'other';
         let serviceType = 'other';
@@ -982,18 +1100,19 @@ const updateServicesFromThekclaut = async () => {
         else if (name.includes('subscriber')) serviceType = 'subscribers';
         else if (name.includes('play')) serviceType = 'plays';
 
-        const existingService = await Service.findOne({ serviceId: service.id });
+        // IMPORTANT: Thekclaut uses "service" field, not "id"
+        const existingService = await Service.findOne({ serviceId: service.service.toString() });
         
         if (existingService) {
           existingService.name = service.name;
-          existingService.category = service.category;
-          existingService.rate = service.rate;
+          existingService.category = service.type || service.category || 'Uncategorized';
+          existingService.rate = rate;
           existingService.ourRate = ourPrice.equities;
           existingService.nairaRate = ourPrice.naira;
-          existingService.min = service.min;
-          existingService.max = service.max;
-          existingService.refill = service.refill;
-          existingService.cancel = service.cancel;
+          existingService.min = parseInt(service.min) || 0;
+          existingService.max = parseInt(service.max) || 0;
+          existingService.refill = Boolean(service.refill);
+          existingService.cancel = Boolean(service.cancel);
           existingService.platform = platform;
           existingService.serviceType = serviceType;
           existingService.lastUpdated = new Date();
@@ -1002,16 +1121,16 @@ const updateServicesFromThekclaut = async () => {
           updatedCount++;
         } else {
           const newService = new Service({
-            serviceId: service.id,
+            serviceId: service.service.toString(),
             name: service.name,
-            category: service.category,
-            rate: service.rate,
+            category: service.type || service.category || 'Uncategorized',
+            rate: rate,
             ourRate: ourPrice.equities,
             nairaRate: ourPrice.naira,
-            min: service.min,
-            max: service.max,
-            refill: service.refill,
-            cancel: service.cancel,
+            min: parseInt(service.min) || 0,
+            max: parseInt(service.max) || 0,
+            refill: Boolean(service.refill),
+            cancel: Boolean(service.cancel),
             platform: platform,
             serviceType: serviceType,
             lastUpdated: new Date()
@@ -1021,7 +1140,7 @@ const updateServicesFromThekclaut = async () => {
           newCount++;
         }
       } catch (error) {
-        console.error(`Error processing service ${service.id}:`, error.message);
+        console.error(`Error processing service ${service.service}:`, error.message);
         errorCount++;
       }
     }
@@ -3572,4 +3691,5 @@ process.on('SIGINT', () => {
 // Export app for testing
 
 module.exports = app;
+
 
