@@ -96,6 +96,10 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
 
+app.get('/', (req, res) => {
+  res.send('E-Acquire Backend is running. Visit /api/health for status.');
+});
+
 // Handle preflight requests
 app.options('*', cors());
 
@@ -3565,4 +3569,5 @@ process.on('SIGINT', () => {
 });
 
 // Export app for testing
+
 module.exports = app;
